@@ -216,14 +216,6 @@ begin
                   "Expected Size = " & integer'image(length) & "; Reported Size = " & 
                   integer'image(to_integer(unsigned(rx_fifo_data_count_out)))
           severity error;
-        
-
-        report "FX3 RX FIFO Size = " & integer'image(to_integer(unsigned(rx_fifo_data_count_out)));
-
-        -- Clock data to our imaginary system bus - we're done with it
-        rx_ready_in <= '1';
-        sleep(length);
-        rx_ready_in <= '0';
 
       end procedure check_fx3_bulk_read;
 
