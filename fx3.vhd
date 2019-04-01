@@ -47,8 +47,8 @@ entity fx3 is
         tx_valid_in        : in std_logic;
 
         -- Test Siganls -- Consider wrapping in synthesis_off/on
-        rx_fifo_data_count_out : out std_logic_vector(6 downto 0);
-        tx_fifo_data_count_out : out std_logic_vector(6 downto 0)
+        rx_fifo_data_count_out : out std_logic_vector(8 downto 0);
+        tx_fifo_data_count_out : out std_logic_vector(8 downto 0)
     );
 
 end entity fx3;
@@ -72,8 +72,8 @@ architecture rtl of fx3 is
 
     signal state, next_state   : STATE_TYPE;
     signal rst      : std_logic;
-    signal data, data_0, data_1, data_2     : std_logic_vector(31 downto 0);
-    signal c_0, c_1, c_2                    : std_logic;
+    signal data, data_0, data_1             : std_logic_vector(31 downto 0);
+    signal c_0, c_1                         : std_logic;
      
     signal msg_buffer   : std_logic_vector(31 downto 0);
     signal led_buffer   : std_logic_vector(7 downto 0);
@@ -174,23 +174,19 @@ begin
             if (state = state_read or state = state_oe_delay) then
                 data_0 <= fx3_fdata_inout;
                 data_1 <= data_0;
-                data_2 <= data_1;
 
                 c_0 <= '1';
                 c_1 <= c_0;
-                c_2 <= c_1;
 
-                data_valid_from_fx3 <= c_2;
-                data_in_from_fx3 <= data_2;
+                data_valid_from_fx3 <= c_1;
+                data_in_from_fx3 <= data_1;
             else
                 c_0 <= '0';
                 c_1 <= '0';
-                c_2 <= '0';
                 data_valid_from_fx3 <= '0';
 
                 data_0 <= (Others => '0');
                 data_1 <= (Others => '0');
-                data_2 <= (Others => '0');
                 data_in_from_fx3 <= (Others => '0');
             end if;
         end if;
@@ -394,7 +390,7 @@ begin
                 --data_valid_from_fx3 <= '0';
                 --data_in_from_fx3 <= (Others => '0');
                 fx3_fdata_inout <= data_out_to_fx3;
-                data_ready_from_fpga <= '1';
+                data_ready_from_fpga <= '0';
 
                 next_state <= state_reset;
 

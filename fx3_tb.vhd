@@ -59,8 +59,8 @@ architecture testbench1 of fx3_tb is
   signal tx_valid_in  : std_logic;
 
   -- Test signals
-  signal rx_fifo_data_count_out : std_logic_vector(6 downto 0);
-  signal tx_fifo_data_count_out : std_logic_vector(6 downto 0);
+  signal rx_fifo_data_count_out : std_logic_vector(8 downto 0);
+  signal tx_fifo_data_count_out : std_logic_vector(8 downto 0);
   
   -- Setup the vcc signal as 1
   signal vcc : std_logic := '1';
@@ -163,7 +163,7 @@ begin
       procedure read_done is begin
         
         fx3_flagd_in <= '0';  -- Clear the watermark, it's ahead of the game
-        sleep(2);             -- FX3 Ready (Flag C) delayed by 2 clock cycles  
+        sleep(1);             -- FX3 Ready (Flag C) delayed by 2 clock cycles
         clear_flags;
         sleep(5);             -- Allow time to propigate through the FPGA
 
