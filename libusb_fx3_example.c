@@ -15,7 +15,10 @@ int main(){
     signal(SIGINT, INThandler);
 
     // Connect to the FX3
-    fx3_init();
+    int error = fx3_init();
+    if(error){
+        return(FX3_ERROR_LIBUSB);
+    }
 
     // Run a Bit Error Rate test
     bit_error_rate_test(3);
@@ -29,7 +32,7 @@ int main(){
 void  INThandler(int sig){
     signal(sig, SIG_IGN);
     printf("You can silence me but there will be others.\n");
-    printf("Semper fidelis tyrannosaurus.\n"); // Always faithful, terrible lizrd.
+    printf("Semper fidelis tyrannosaurus.\n"); // Always faithful, terrible lizard.
     fx3_close();
     exit(0);
 }
@@ -54,12 +57,14 @@ float bit_error_rate_test(int test_length){
         }
         int bytes_sent = fx3_bulk_write(tx_buffer, FX3_MAX_PAYLOAD);
 
-        uint8_t rx_buffer[FX3_MAX_PAYLOAD];
+        uint8_t rx_buffer[USB_RX_BUFFER_DEPTH];
         
-        for(int i=0; i<FX3_MAX_PAYLOAD; i++){
+        for(int i=0; i<USB_RX_BUFFER_DEPTH; i++){
             rx_buffer[i] = 0;
         }
-        int bytes_recieved = fx3_bulk_read(rx_buffer, FX3_MAX_PAYLOAD);
+        // Read buffer is larger than fx3_max_payload because the USB standard allows
+        // read lengths exceeding requested (A protocol error known as "babble")
+        int bytes_received = fx3_bulk_read(rx_buffer, FX3_MAX_PAYLOAD);
 
         uint32_t rogue_bits = 0;
         uint32_t a_buff[FX3_MAX_PAYLOAD/4];
@@ -78,10 +83,16 @@ float bit_error_rate_test(int test_length){
             }
         }
         
-        if (bytes_sent == 0 || bytes_recieved == 0)
+        if (bytes_sent == 0 || bytes_received == 0)
             rogue_bits = FX3_MAX_PAYLOAD*8;
         failed += rogue_bits;
         successful += (FX3_MAX_PAYLOAD*8)-rogue_bits;
+
+        if(bytes_received != FX3_MAX_PAYLOAD){
+            printf("Buffer mismatch, possibly a usb port 'babble' or incorrect 'End of Packet'\
+                signal. Expected: %d, Received: %d, Mismatch: %d\n", FX3_MAX_PAYLOAD, bytes_received,
+                (FX3_MAX_PAYLOAD-bytes_received));
+        }
     
         printf("\rsuccessful: %u failed: %u %.2f.", successful, failed, 
             (float)failed/(successful+failed));

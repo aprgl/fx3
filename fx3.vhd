@@ -33,7 +33,7 @@ entity fx3 is
 
         fx3_fdata_inout    : inout std_logic_vector(31 downto 0); -- The bidirectional data bus
 
-        fx3_pmode_out      : out std_logic_vector(1 downto 0);  -- Bootmode Selector
+        fx3_pmode_out      : out std_logic_vector(1 downto 0);  -- Boot-mode Selector
         fx3_reset_out      : out std_logic;                     -- FX3 Reset
 
         -- RX FIFO
@@ -67,7 +67,10 @@ architecture rtl of fx3 is
         state_flaga_wait,
         state_flagb_wait,
         state_write,
-        state_end_of_packet
+        state_end_of_packet,
+        state_end_of_packet_hold_0,
+        state_end_of_packet_hold_1,
+        state_end_of_packet_hold_2
     );
 
     signal state, next_state   : STATE_TYPE;
@@ -201,8 +204,6 @@ begin
         fx3_slwr_n_out <= '1';
         fx3_fifo_address_out <= "11";
         fx3_fdata_inout <= (Others => 'Z');
-        --data_valid_from_fx3 <= '0';
-        --data_in_from_fx3 <= (Others => '0');
         data_ready_from_fpga <= '0';
         next_state <= state_reset;
     else
@@ -214,8 +215,6 @@ begin
                 fx3_slwr_n_out <= '1';
                 fx3_fifo_address_out <= "11";
                 fx3_fdata_inout <= (Others => 'Z');
-                --data_valid_from_fx3 <= '0';
-                --data_in_from_fx3 <= (Others => '0');
                 data_ready_from_fpga <= '0';
 
                 if(fx3_flagc_in = '1') and (cpu_to_fpga_buffer_full = '0') then -- Do we have data to read and the fifo has space?
@@ -236,9 +235,6 @@ begin
                 fx3_fifo_address_out <= "11";
                 fx3_fdata_inout <= (Others => 'Z');
 
-                --data_valid_from_fx3 <= '0';
-                --data_in_from_fx3 <= (Others => '0');
-
                 data_ready_from_fpga <= '0';
 
                 next_state <= state_idle_2;
@@ -251,8 +247,6 @@ begin
                 fx3_fifo_address_out <= "11";
                 fx3_fdata_inout <= (Others => 'Z');
 
-                --data_valid_from_fx3 <= '0';
-                --data_in_from_fx3 <= (Others => '0');
 
                 data_ready_from_fpga <= '0';
 
@@ -288,8 +282,6 @@ begin
                 fx3_fifo_address_out <= "11";
                 fx3_fdata_inout <= (Others => 'Z');
 
-                --data_valid_from_fx3 <= '0';
-                --data_in_from_fx3 <= (Others => '0');
 
                 data_ready_from_fpga <= '0';
 
@@ -302,8 +294,6 @@ begin
                 fx3_slwr_n_out <= '1';
                 fx3_fifo_address_out <= "11";
                 fx3_fdata_inout <= (Others => 'Z');
-                --data_valid_from_fx3 <= '0';
-                --data_in_from_fx3 <= (Others => '0');
                 data_ready_from_fpga <= '0';
 
                 next_state <= state_oe_delay_3;
@@ -315,8 +305,6 @@ begin
                 fx3_slwr_n_out <= '1';
                 fx3_fifo_address_out <= "11";
                 fx3_fdata_inout <= (Others => 'Z');
-                --data_valid_from_fx3 <= '0';
-                --data_in_from_fx3 <= (Others => '0');
                 data_ready_from_fpga <= '0';
 
                 next_state <= state_reset;
@@ -330,8 +318,6 @@ begin
                 fx3_slwr_n_out <= '1';
                 fx3_fifo_address_out <= "00";
                 fx3_fdata_inout <= (Others => 'Z');
-                --data_valid_from_fx3 <= '0';
-                --data_in_from_fx3 <= (Others => '0');
                 data_ready_from_fpga <= '0';
 
                 if(fx3_flaga_in = '1') then
@@ -348,8 +334,6 @@ begin
                 fx3_slwr_n_out <= '1';
                 fx3_fifo_address_out <= "00";
                 fx3_fdata_inout <= (Others => 'Z');
-                --data_valid_from_fx3 <= '0';
-                --data_in_from_fx3 <= (Others => '0');
                 data_ready_from_fpga <= '0';
                 
                 -- If we have room in the FX3 and the FIFO still has data
@@ -368,8 +352,6 @@ begin
                 fx3_slwr_n_out <= '0';
                 fx3_fifo_address_out <= "00";
                 
-                --data_valid_from_fx3 <= '0';
-                --data_in_from_fx3 <= (Others => '0');
                 fx3_fdata_inout <= data_out_to_fx3;
                 data_ready_from_fpga <= '1';
 
@@ -387,8 +369,44 @@ begin
                 fx3_slwr_n_out <= '0';
                 fx3_fifo_address_out <= "00";
                 
-                --data_valid_from_fx3 <= '0';
-                --data_in_from_fx3 <= (Others => '0');
+                fx3_fdata_inout <= data_out_to_fx3;
+                data_ready_from_fpga <= '0';
+
+                next_state <= state_end_of_packet_hold_0;
+
+            when state_end_of_packet_hold_0 =>
+
+                fx3_pktend_n_out <= '1';
+                fx3_sloe_n_out <= '1';
+                fx3_slrd_n_out <= '1';
+                fx3_slwr_n_out <= '1';
+                fx3_fifo_address_out <= "00";
+                
+                fx3_fdata_inout <= (Others => '0');
+                data_ready_from_fpga <= '0';
+
+                next_state <= state_end_of_packet_hold_1;
+
+            when state_end_of_packet_hold_1 =>
+
+                fx3_pktend_n_out <= '1';
+                fx3_sloe_n_out <= '1';
+                fx3_slrd_n_out <= '1';
+                fx3_slwr_n_out <= '1';
+                fx3_fifo_address_out <= "00";
+                
+                fx3_fdata_inout <= data_out_to_fx3;
+                data_ready_from_fpga <= '0';
+
+                next_state <= state_end_of_packet_hold_2;
+
+            when state_end_of_packet_hold_2 =>
+
+                fx3_pktend_n_out <= '1';
+                fx3_sloe_n_out <= '1';
+                fx3_slrd_n_out <= '1';
+                fx3_slwr_n_out <= '1';
+                fx3_fifo_address_out <= "00";
                 fx3_fdata_inout <= data_out_to_fx3;
                 data_ready_from_fpga <= '0';
 
@@ -402,8 +420,6 @@ begin
                 fx3_slwr_n_out <= '1';
                 fx3_fifo_address_out <= "11";
                 fx3_fdata_inout <= (Others => 'Z');
-                --data_valid_from_fx3 <= '0';
-                --data_in_from_fx3 <= (Others => '0');
                 data_ready_from_fpga <= '0';
 
                 next_state <= state_reset;

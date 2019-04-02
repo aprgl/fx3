@@ -45,7 +45,7 @@ architecture testbench1 of fx3_tb is
 
   signal  fx3_fdata_inout :  std_logic_vector(31 downto 0);  -- The bidirectional data bus
 
-  signal  fx3_pmode_out :  std_logic_vector(1 downto 0); -- Bootmode Selector
+  signal  fx3_pmode_out :  std_logic_vector(1 downto 0); -- Boot-mode Selector
   signal  fx3_reset_out :  std_logic;         -- FX3 Reset
 
   -- RX FIFO
@@ -112,7 +112,7 @@ begin
     -- Let's check our work!
     main : process
 
-      -- ***** -- Supporting Proceudres -- ***** --
+      -- ***** -- Supporting Procedures -- ***** --
       
       procedure sleep(constant delay : in natural) is 
         variable I : integer range 0 to 2048; 
@@ -165,7 +165,7 @@ begin
         fx3_flagd_in <= '0';  -- Clear the watermark, it's ahead of the game
         sleep(1);             -- FX3 Ready (Flag C) delayed by 2 clock cycles
         clear_flags;
-        sleep(5);             -- Allow time to propigate through the FPGA
+        sleep(5);             -- Allow time to propagate through the FPGA
 
       end procedure read_done;
 

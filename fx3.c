@@ -17,7 +17,7 @@ int fx3_init(){
     // Init libusb
     error = libusb_init(NULL);
     if(error){
-        return(FX3_ERROR_LIBUSB); // Failed to initialise libusb.
+        return(FX3_ERROR_LIBUSB); // Failed to initialize libusb.
     }
 
     // Get the list of usb devices
@@ -86,11 +86,11 @@ int fx3_bulk_read(uint8_t* buffer, uint16_t length){
     int error = libusb_bulk_transfer(fx3.dev_handle, FX3_BULK_ENDPOINT_IN,
                                     buffer, length, &transferred, USB_TIMEOUT);
     if(error){
-        return FX3_ERROR_LIBUSB;
+        return error;//FX3_ERROR_LIBUSB;
     }
 
     #ifdef DEBUG
-        printf("Data RX Buffer After - recieved from fx3:\n");
+        printf("Data RX Buffer After - received from fx3:\n");
         for(int i=0; i<length; i++){
             printf("0x%hhx ", buffer[i]);
         }
@@ -133,24 +133,9 @@ int fx3_clear_buffers(){
     uint8_t buffer[4096] = {0};
     int transferred = 0;
     int error = 0;
-    do {
-        transferred = 0;
-        error = libusb_bulk_transfer(fx3.dev_handle, FX3_BULK_ENDPOINT_IN,
-                                    buffer, length, &transferred, USB_TIMEOUT);
-
-        #ifdef DEBUG
-            if(error){
-                printf("Read Error. Error code: %d\n",error);
-            }
-            if(transferred != length){
-                printf("Shattered! Incomplete data transfer. \
-                    Expected: %d - Actual: %d\n",length,transferred);
-            }
-            printf("RX Transferred %d\n",transferred);
-            printf("Error: %d\n",error);
-        #endif
-
-    } while( error != LIBUSB_ERROR_TIMEOUT || transferred != 0 );
+    transferred = 0;
+    libusb_bulk_transfer(fx3.dev_handle, FX3_BULK_ENDPOINT_IN,
+                                buffer, length, &transferred, USB_TIMEOUT);
     
     return transferred;
 }

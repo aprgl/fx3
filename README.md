@@ -17,4 +17,4 @@ The FX3 is currently being loaded with SF_loopback.img from [AN65974](https://ww
 Cyclone IV on the [DE2-115 Dev Kit](https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&No=502)
 
 # Useful Links
-[libusb error codes](http://libusb.sourceforge.net/api-1.0/group__libusb__misc.htmlhttps://www.cypress.com/documentation/development-kitsboards/cyusb3kit-003-ez-usb-fx3-superspeed-explorer-kit)
+[libusb error codes](http://libusb.sourceforge.net/api-1.0/group__libusb__misc.html)
