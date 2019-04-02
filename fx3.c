@@ -132,7 +132,6 @@ int fx3_clear_buffers(){
     int length = 4096;
     uint8_t buffer[4096] = {0};
     int transferred = 0;
-    int error = 0;
     transferred = 0;
     libusb_bulk_transfer(fx3.dev_handle, FX3_BULK_ENDPOINT_IN,
                                 buffer, length, &transferred, USB_TIMEOUT);
