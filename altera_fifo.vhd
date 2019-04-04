@@ -157,7 +157,7 @@ END SYN;
 -- Retrieval info: PRIVATE: LegacyRREQ NUMERIC "0"
 -- Retrieval info: PRIVATE: MAX_DEPTH_BY_9 NUMERIC "0"
 -- Retrieval info: PRIVATE: OVERFLOW_CHECKING NUMERIC "0"
--- Retrieval info: PRIVATE: Optimize NUMERIC "0"
+-- Retrieval info: PRIVATE: Optimize NUMERIC "2"
 -- Retrieval info: PRIVATE: RAM_BLOCK_TYPE NUMERIC "0"
 -- Retrieval info: PRIVATE: SYNTH_WRAPPER_GEN_POSTFIX STRING "0"
 -- Retrieval info: PRIVATE: UNDERFLOW_CHECKING NUMERIC "0"
@@ -212,7 +212,7 @@ END SYN;
 -- Retrieval info: CONNECT: usedw 0 0 9 0 @usedw 0 0 9 0
 -- Retrieval info: GEN_FILE: TYPE_NORMAL altera_fifo.vhd TRUE
 -- Retrieval info: GEN_FILE: TYPE_NORMAL altera_fifo.inc FALSE
--- Retrieval info: GEN_FILE: TYPE_NORMAL altera_fifo.cmp TRUE
+-- Retrieval info: GEN_FILE: TYPE_NORMAL altera_fifo.cmp FALSE
 -- Retrieval info: GEN_FILE: TYPE_NORMAL altera_fifo.bsf FALSE
--- Retrieval info: GEN_FILE: TYPE_NORMAL altera_fifo_inst.vhd TRUE
+-- Retrieval info: GEN_FILE: TYPE_NORMAL altera_fifo_inst.vhd FALSE
 -- Retrieval info: LIB_FILE: altera_mf

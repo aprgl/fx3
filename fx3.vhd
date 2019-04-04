@@ -125,7 +125,7 @@ begin
 
 
     tx_ready_out <= '1' when (fpga_to_cpu_buffer_full /= '1') else '0';
-    data_valid_from_fpga <= '1' when (fpga_to_cpu_buffer_empty /= '1') else '0';
+    data_valid_from_fpga <= '1' when (fpga_to_cpu_buffer_almost_empty /= '1') else '0';
 
 
     cpu_to_fpga_fifo : entity work.altera_fifo 
@@ -217,9 +217,11 @@ begin
                 fx3_fdata_inout <= (Others => 'Z');
                 data_ready_from_fpga <= '0';
 
-                if(fx3_flagc_in = '1') and (cpu_to_fpga_buffer_full = '0') then -- Do we have data to read and the fifo has space?
+                -- Do we have data to read and the fifo has space?
+                if(fx3_flagc_in = '1') and (cpu_to_fpga_buffer_full = '0') then
                     next_state <= state_idle;
-                elsif (fx3_flaga_in = '1') and (data_valid_from_fpga = '1') then -- Do we have data to send to the CPU?
+                -- Do we have data to send to the CPU?
+                elsif (fx3_flaga_in = '1') and (data_valid_from_fpga = '1') then
                     next_state <= state_flaga_wait;
                 else
                     next_state <= state_reset;
@@ -307,7 +309,11 @@ begin
                 fx3_fdata_inout <= (Others => 'Z');
                 data_ready_from_fpga <= '0';
 
-                next_state <= state_reset;
+                if (fx3_flaga_in = '1') and (data_valid_from_fpga = '1') then -- Do we have data to send to the CPU?
+                    next_state <= state_flaga_wait;
+                else
+                    next_state <= state_reset;
+                end if;
                      
             -- Writing Data to the FX3
             when state_flaga_wait =>
@@ -320,11 +326,8 @@ begin
                 fx3_fdata_inout <= (Others => 'Z');
                 data_ready_from_fpga <= '0';
 
-                if(fx3_flaga_in = '1') then
-                    next_state <= state_write;
-                else
-                    next_state <= state_flaga_wait;
-                end if;
+                next_state <= state_flagb_wait;
+                
                                      
             when state_flagb_wait =>
                 
@@ -336,13 +339,7 @@ begin
                 fx3_fdata_inout <= (Others => 'Z');
                 data_ready_from_fpga <= '0';
                 
-                -- If we have room in the FX3 and the FIFO still has data
-                if(fx3_flagb_in = '1') then
-                    next_state <= state_write;
-                else
-                    next_state <= state_flagb_wait;
-                end if;
-
+                next_state <= state_write;
                      
             when state_write =>
                 
@@ -370,7 +367,7 @@ begin
                 fx3_fifo_address_out <= "00";
                 
                 fx3_fdata_inout <= data_out_to_fx3;
-                data_ready_from_fpga <= '0';
+                data_ready_from_fpga <= '1';
 
                 next_state <= state_end_of_packet_hold_0;
 
@@ -395,7 +392,7 @@ begin
                 fx3_slwr_n_out <= '1';
                 fx3_fifo_address_out <= "00";
                 
-                fx3_fdata_inout <= data_out_to_fx3;
+                fx3_fdata_inout <= (Others => 'Z');
                 data_ready_from_fpga <= '0';
 
                 next_state <= state_end_of_packet_hold_2;
@@ -407,7 +404,7 @@ begin
                 fx3_slrd_n_out <= '1';
                 fx3_slwr_n_out <= '1';
                 fx3_fifo_address_out <= "00";
-                fx3_fdata_inout <= data_out_to_fx3;
+                fx3_fdata_inout <= (Others => 'Z');
                 data_ready_from_fpga <= '0';
 
                 next_state <= state_reset;

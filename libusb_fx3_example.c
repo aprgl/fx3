@@ -21,7 +21,7 @@ int main(){
     }
 
     // Run a Bit Error Rate test
-    bit_error_rate_test(3);
+    bit_error_rate_test(100);
 
     // Disconnect from the FX3
     fx3_close();
@@ -94,7 +94,7 @@ float bit_error_rate_test(int test_length){
                 (FX3_MAX_PAYLOAD-bytes_received));
         }
     
-        printf("\rsuccessful: %u failed: %u %.2f.", successful, failed, 
+        printf("\rsuccessful: %u failed: %u %.2f.\n", successful, failed, 
             (float)failed/(successful+failed));
         fflush(stdout);
 
