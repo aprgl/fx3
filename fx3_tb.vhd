@@ -242,7 +242,8 @@ begin
         
       end procedure check_fx3_single_read;
 
-      procedure check_fx3_single_write(constant in1 : in std_logic_vector(31 downto 0)) is begin
+      procedure check_fx3_single_write(
+        constant in1 : in std_logic_vector(31 downto 0)) is begin
 
         -- FX3 is empty at power on!
         fx3_flaga_in <= '1';
@@ -251,18 +252,87 @@ begin
         fx3_flagd_in <= '0';
 
         load_tx_fifo(in1);
-        
+
         -- Wait until we send the first chunk
         wait until fx3_slwr_n_out <= '0';
 
         assert fx3_fdata_inout = in1
         report "Unexpected Result in FIFO to FX3 Check: " &
-        "FIFO Data = " & integer'image(to_integer(unsigned(in1))) & "; " &
         "FX3 Data = " & integer'image(to_integer(unsigned(fx3_fdata_inout))) & "; " &
         "FX3 Data Expected = " & integer'image(to_integer(unsigned(in1)))
         severity error;
 
       end procedure check_fx3_single_write;
+
+      procedure check_fx3_bulk_write(
+        constant in1 : in std_logic_vector(31 downto 0);
+        constant length : in natural) is begin
+
+        clear_flags;
+
+        for I in 1 to length loop
+          load_tx_fifo(in1+I);
+        end loop;
+
+        -- FX3 ready to read data
+        fx3_flaga_in <= '1';
+        fx3_flagb_in <= '1';
+
+        sleep(1);
+        -- Wait until we send the first chunk
+        wait until fx3_slwr_n_out <= '0';
+        sleep(length);
+
+        assert fx3_fdata_inout = in1+length
+        report "Unexpected Result in FIFO to FX3 Check: " &
+        "FX3 Data = " & integer'image(to_integer(unsigned(fx3_fdata_inout))) & "; " &
+        "FX3 Data Expected = " & integer'image(to_integer(unsigned(in1+length)))
+        severity error;
+
+      end procedure check_fx3_bulk_write;
+
+      procedure check_fx3_bulk_backpressure_write(
+        constant in1 : in std_logic_vector(31 downto 0);
+        constant length : in natural) is begin
+
+        clear_flags;
+
+        for I in 1 to length loop
+          load_tx_fifo(in1+I);
+        end loop;
+
+        -- FX3 ready to read data
+        fx3_flaga_in <= '1';
+        fx3_flagb_in <= '1';
+        wait until fx3_slwr_n_out <= '0';
+
+        sleep(10);
+
+        -- Set FX3 Watermark 
+        fx3_flaga_in <= '1';
+        fx3_flagb_in <= '0';
+
+        -- Set FX3 Full flag (Delayed by 3 cycles from watermark)
+        sleep(3);
+        clear_flags;
+
+        -- Wait a hot second while the usb host reads data
+        sleep(1000);
+
+        -- Ready to read data again!
+        fx3_flaga_in <= '1';
+        fx3_flagb_in <= '1';
+
+        -- Wait until we send the first chunk
+        sleep((length-10));
+
+        assert fx3_fdata_inout = in1+length
+        report "Unexpected Result in FIFO to FX3 Check: " &
+        "FX3 Data = " & integer'image(to_integer(unsigned(fx3_fdata_inout))) & "; " &
+        "FX3 Data Expected = " & integer'image(to_integer(unsigned(in1+length)))
+        severity error;
+
+      end procedure check_fx3_bulk_backpressure_write;
 
     begin
       test_runner_setup(runner, runner_cfg); -- Required for vunit
@@ -288,8 +358,12 @@ begin
           check_fx3_single_read;
         elsif run("Bulk FX3 Read Test") then
           check_fx3_bulk_read(100);
-        elsif run("FX3 to FIFO") then
+        elsif run("Single FX3 Write Test") then
           check_fx3_single_write(X"2345_6789");
+        elsif run("Bulk FX3 Write Test") then
+          check_fx3_bulk_write(X"0000_0000",100);
+        elsif run("Bulk FX3 Back-Pressure Write Test") then
+          check_fx3_bulk_backpressure_write(X"0000_0000",100);
         end if;
       end loop;
 

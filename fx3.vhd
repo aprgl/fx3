@@ -67,6 +67,7 @@ architecture rtl of fx3 is
         state_flaga_wait,
         state_flagb_wait,
         state_write,
+        state_write_fx3_backpressure,
         state_end_of_packet,
         state_end_of_packet_hold_0,
         state_end_of_packet_hold_1,
@@ -93,6 +94,7 @@ architecture rtl of fx3 is
 
     signal data_valid_from_fx3              : std_logic;
     signal data_valid_from_fpga             : std_logic;
+    signal data_valid_from_fpga_watermark   : std_logic;
     signal data_ready_from_fpga             : std_logic;
     signal data_in_from_fx3                 : std_logic_vector(31 downto 0);
     signal data_out_to_fx3                  : std_logic_vector(31 downto 0);
@@ -125,7 +127,8 @@ begin
 
 
     tx_ready_out <= '1' when (fpga_to_cpu_buffer_full /= '1') else '0';
-    data_valid_from_fpga <= '1' when (fpga_to_cpu_buffer_almost_empty /= '1') else '0';
+    data_valid_from_fpga <= '1' when (fpga_to_cpu_buffer_empty /= '1') else '0';
+    data_valid_from_fpga_watermark <= '1' when (fpga_to_cpu_buffer_almost_empty /= '1') else '0';
 
 
     cpu_to_fpga_fifo : entity work.altera_fifo 
@@ -249,7 +252,6 @@ begin
                 fx3_fifo_address_out <= "11";
                 fx3_fdata_inout <= (Others => 'Z');
 
-
                 data_ready_from_fpga <= '0';
 
                 next_state <= state_read;
@@ -283,7 +285,6 @@ begin
                 fx3_slwr_n_out <= '1';
                 fx3_fifo_address_out <= "11";
                 fx3_fdata_inout <= (Others => 'Z');
-
 
                 data_ready_from_fpga <= '0';
 
@@ -327,7 +328,6 @@ begin
                 data_ready_from_fpga <= '0';
 
                 next_state <= state_flagb_wait;
-                
                                      
             when state_flagb_wait =>
                 
@@ -352,11 +352,26 @@ begin
                 fx3_fdata_inout <= data_out_to_fx3;
                 data_ready_from_fpga <= '1';
 
-                if(fx3_flaga_in = '1') and (data_valid_from_fpga = '1') then
+                -- If we see the back pressure watermark flag, stop sending data
+                if(fx3_flagb_in = '1') and (data_valid_from_fpga_watermark = '1') then
                     next_state <= state_write;
+                elsif (fx3_flagb_in = '0') then
+                    next_state <= state_write_fx3_backpressure;
                 else
                     next_state <= state_end_of_packet;
                 end if;
+
+            when state_write_fx3_backpressure =>
+                fx3_pktend_n_out <= '1';
+                fx3_sloe_n_out <= '1';
+                fx3_slrd_n_out <= '1';
+                fx3_slwr_n_out <= '0';
+                fx3_fifo_address_out <= "00";
+                
+                fx3_fdata_inout <= data_out_to_fx3;
+                data_ready_from_fpga <= '1';
+
+                next_state <= state_end_of_packet;
 
             when state_end_of_packet =>
                 
@@ -408,7 +423,6 @@ begin
                 data_ready_from_fpga <= '0';
 
                 next_state <= state_reset;
-
                          
             when others =>
                 fx3_pktend_n_out <= '1';
