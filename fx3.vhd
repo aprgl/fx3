@@ -1,6 +1,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.std_logic_unsigned.all;
+use ieee.numeric_std.all;
 
 -- pragma translate_off
 library vunit_lib;
@@ -102,22 +102,22 @@ architecture rtl of fx3 is
 
 begin
 
-    fpga_to_cpu_fifo : entity work.altera_fifo
+    fpga_to_cpu_fifo : entity work.fifo
     port map (
         clock    => clk_in,
-        aclr     => rst,
+        rst     => rst,
 
         -- FPGA to CPU (TX)
-        data     => tx_data_in,
-        wrreq    => tx_valid_in,
+        data_in     => tx_data_in,
+        write_ena   => tx_valid_in,
         
         -- Internal FX3 Block Signals
-        rdreq    => data_ready_from_fpga,
-        q        => data_out_to_fx3,
+        read_ena    => data_ready_from_fpga,
+        data_out    => data_out_to_fx3,
         
         -- Flags
         almost_empty => fpga_to_cpu_buffer_almost_empty,
-        almost_full  => fpga_to_cpu_buffer_almost_full,
+        --almost_full  => fpga_to_cpu_buffer_almost_full,
         empty    => fpga_to_cpu_buffer_empty,
         full     => fpga_to_cpu_buffer_full,
 
@@ -125,31 +125,34 @@ begin
         usedw    => tx_fifo_data_count_out
     );
 
-
     tx_ready_out <= '1' when (fpga_to_cpu_buffer_full /= '1') else '0';
     data_valid_from_fpga <= '1' when (fpga_to_cpu_buffer_empty /= '1') else '0';
     data_valid_from_fpga_watermark <= '1' when (fpga_to_cpu_buffer_almost_empty /= '1') else '0';
 
 
-    cpu_to_fpga_fifo : entity work.altera_fifo 
+    cpu_to_fpga_fifo : entity work.fifo 
     port map (
         clock    => clk_in,
-        aclr     => rst,
+        rst     => rst,
 
         -- CPU to FPGA (RX)
-        rdreq    => rx_ready_in,
-        q        => rx_data_out,
+        read_ena    => rx_ready_in,
+        data_out    => rx_data_out,
         
         -- Internal FX3 Block Signals
-        data     => data_in_from_fx3,
-        wrreq    => data_valid_from_fx3,
+        data_in     => data_in_from_fx3,
+        write_ena   => data_valid_from_fx3,
         
+        -- Flags
         almost_empty => cpu_to_fpga_buffer_almost_empty,
-        almost_full  => cpu_to_fpga_buffer_almost_full,
+        --almost_full  => cpu_to_fpga_buffer_almost_full,
         empty    => cpu_to_fpga_buffer_empty,
         full     => cpu_to_fpga_buffer_full,
+
+        -- Debug
         usedw    => rx_fifo_data_count_out
     );
+
     -- Stateless Signals (because we can't invert in the port map)
     rx_valid_out <= '1' when (cpu_to_fpga_buffer_empty /= '1') else '0';
 
@@ -337,7 +340,7 @@ begin
                 fx3_slwr_n_out <= '1';
                 fx3_fifo_address_out <= "00";
                 fx3_fdata_inout <= (Others => 'Z');
-                data_ready_from_fpga <= '0';
+                data_ready_from_fpga <= '1';
                 
                 next_state <= state_write;
                      

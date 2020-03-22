@@ -2,11 +2,14 @@
 
 -- Load Altera libraries for this device
 Library ieee;
-Library cycloneive;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use ieee.std_logic_unsigned.all;
-use cycloneive.cycloneive_components.all;
+--use ieee.std_logic_unsigned.all;
+
+--Library cycloneive;
+--use cycloneive.cycloneive_components.all;
+
+-- Load VUnit Lib
 library vunit_lib;
 context vunit_lib.vunit_context;
 
@@ -119,9 +122,9 @@ begin
         begin
           I := 0;
           while (I < delay) loop
-            wait until rising_edge(fx3_pclk_out);
+            wait until rising_edge(clk_in);
             I := I + 1;
-          end loop; 
+          end loop;
       end procedure sleep;
 
       -- ***** -- Housekeeping Procedures -- ***** --
@@ -142,7 +145,7 @@ begin
 
       procedure read_setup(constant length : in natural) is begin
         
-        clear_rx_buffer;
+        --clear_rx_buffer;
         
         -- Setup Flags --
         fx3_flaga_in <= '0';            -- FX3 not ready to read
@@ -174,6 +177,8 @@ begin
       end procedure send_data_from_fx3;
 
       procedure load_tx_fifo(constant value : in std_logic_vector(31 downto 0)) is begin
+        wait until rising_edge(clk_in);
+        sleep(1);
         tx_data_in <= value;
         tx_valid_in <= '1';
         sleep(1);
@@ -183,15 +188,15 @@ begin
       -- ***** -- Test Procedures -- ***** --
 
       procedure check_fx3_bulk_read(constant length : in natural) is
-        variable data_position : std_logic_vector(7 downto 0) := X"00"; 
+        variable data_position : unsigned(7 downto 0) := X"00"; 
         begin
 
         read_setup(length);
         
         for I in 1 to length-1 loop
           if(fx3_slrd_n_out = '0') then
-            send_data_from_fx3(data_position & X"C0FFEE");
-            data_position := data_position + '1';
+            send_data_from_fx3(std_logic_vector(data_position) & X"C0FFEE");
+            data_position := data_position + 1;
             sleep(1);
           else
             sleep(30);
@@ -211,47 +216,61 @@ begin
           severity error;
 
         -- Verify the FIFO size
-        assert rx_fifo_data_count_out = length
+        assert unsigned(rx_fifo_data_count_out) = to_unsigned(length,9)
           report "FPGA FIFO Size is wrong: " &
                   "Expected Size = " & integer'image(length) & "; Reported Size = " & 
                   integer'image(to_integer(unsigned(rx_fifo_data_count_out)))
           severity error;
 
       end procedure check_fx3_bulk_read;
-
+        
       procedure check_fx3_single_read is begin
 
         read_setup(1);
         send_data_from_fx3(AWESOME_TEST_HEX);
         read_done;
 
-        -- Check output against expected result.
-        assert rx_data_out = AWESOME_TEST_HEX
-          report "Mismatch in FX3 to FPGA Single Read Test: " &
-                  "FX3 Data = " & integer'image(to_integer(unsigned(AWESOME_TEST_HEX))) & "; " &
-                  "FIFO Data = " & integer'image(to_integer(unsigned(rx_data_out))) & "; " &
-                  "FX3 RX FIFO Size = " & integer'image(to_integer(unsigned(rx_fifo_data_count_out)))
-          severity error;
-
         -- Verify the FIFO size
-        assert rx_fifo_data_count_out = 1
+        assert unsigned(rx_fifo_data_count_out) = 1
           report "FPGA FIFO Size is wrong: " &
                   "Expected Size = 1; Reported Size = " & 
                   integer'image(to_integer(unsigned(rx_fifo_data_count_out)))
           severity error;
         
+
+        -- Check output against expected result.
+        assert rx_data_out = AWESOME_TEST_HEX
+          report "Mismatch in FX3 to FPGA Single Read Test: " &
+                  "FX3 Data = " & to_hstring(AWESOME_TEST_HEX) & "; " &
+                  "FIFO Data = " & to_hstring(rx_data_out) & "; " &
+                  "FX3 RX FIFO Size = " & integer'image(to_integer(unsigned(rx_fifo_data_count_out)))
+          severity error;
+
       end procedure check_fx3_single_read;
 
       procedure check_fx3_single_write(
         constant in1 : in std_logic_vector(31 downto 0)) is begin
 
-        -- FX3 is empty at power on!
+        report "Start of test!";
+
+        clear_flags;
+        report "TX Reported Size = " & integer'image(to_integer(unsigned(tx_fifo_data_count_out)));
+        load_tx_fifo(in1);
+        report "TX Reported Size = " & integer'image(to_integer(unsigned(tx_fifo_data_count_out)));
+        sleep(1);
+        report "TX Reported Size = " & integer'image(to_integer(unsigned(tx_fifo_data_count_out)));
+        -- Verify the FIFO size
+        assert unsigned(tx_fifo_data_count_out) = 1
+          report "FPGA FIFO Size is wrong: " &
+                  "Expected Size = 1; Reported Size = " & 
+                  integer'image(to_integer(unsigned(tx_fifo_data_count_out)))
+          severity error;
+
+        -- FX3 ready to read data
         fx3_flaga_in <= '1';
         fx3_flagb_in <= '1';
-        fx3_flagc_in <= '0';
-        fx3_flagd_in <= '0';
-
-        load_tx_fifo(in1);
+        
+        sleep(1);
 
         -- Wait until we send the first chunk
         wait until fx3_slwr_n_out <= '0';
@@ -269,24 +288,39 @@ begin
         constant length : in natural) is begin
 
         clear_flags;
+        sleep(4);
 
         for I in 1 to length loop
-          load_tx_fifo(in1+I);
+          load_tx_fifo(std_logic_vector(unsigned(in1)+to_unsigned(I,31)));
         end loop;
+
+        sleep(4);
+
+        -- Verify the FIFO size
+        report "Size is: " & integer'image(to_integer(unsigned(tx_fifo_data_count_out)));
+
+        assert unsigned(tx_fifo_data_count_out) = length
+          report "FPGA FIFO Size is wrong: " &
+                  "Expected Size = " & integer'image(length) & " Reported Size = " & 
+                  integer'image(to_integer(unsigned(tx_fifo_data_count_out)))
+          severity error;
 
         -- FX3 ready to read data
         fx3_flaga_in <= '1';
         fx3_flagb_in <= '1';
 
-        sleep(1);
+--        sleep(1);
         -- Wait until we send the first chunk
         wait until fx3_slwr_n_out <= '0';
-        sleep(length);
+        for I in 1 to length-1 loop
+          report "Index: " & integer'image(I) & " Value: " & integer'image(to_integer(unsigned(fx3_fdata_inout)));
+          sleep(1);
+        end loop;
 
-        assert fx3_fdata_inout = in1+length
+        assert fx3_fdata_inout = std_logic_vector(unsigned(in1)+to_unsigned(length,32))
         report "Unexpected Result in FIFO to FX3 Check: " &
         "FX3 Data = " & integer'image(to_integer(unsigned(fx3_fdata_inout))) & "; " &
-        "FX3 Data Expected = " & integer'image(to_integer(unsigned(in1+length)))
+        "FX3 Data Expected = " & integer'image(to_integer(unsigned(in1)+to_unsigned(length,32)))
         severity error;
 
       end procedure check_fx3_bulk_write;
@@ -298,7 +332,7 @@ begin
         clear_flags;
 
         for I in 1 to length loop
-          load_tx_fifo(in1+I);
+          load_tx_fifo(std_logic_vector(unsigned(in1)+to_unsigned(I,31)));
         end loop;
 
         -- FX3 ready to read data
@@ -306,30 +340,28 @@ begin
         fx3_flagb_in <= '1';
         wait until fx3_slwr_n_out <= '0';
 
-        sleep(10);
-
+        sleep(7);
         -- Set FX3 Watermark 
         fx3_flaga_in <= '1';
         fx3_flagb_in <= '0';
-
         -- Set FX3 Full flag (Delayed by 3 cycles from watermark)
         sleep(3);
         clear_flags;
-
         -- Wait a hot second while the usb host reads data
         sleep(1000);
-
+        
         -- Ready to read data again!
         fx3_flaga_in <= '1';
         fx3_flagb_in <= '1';
-
+        report "Value: " & integer'image(to_integer(unsigned(tx_fifo_data_count_out)));
+        wait until fx3_slwr_n_out <= '0';
         -- Wait until we send the first chunk
-        sleep((length-10));
+        sleep(88);
 
-        assert fx3_fdata_inout = in1+length
+        assert fx3_fdata_inout = std_logic_vector(unsigned(in1)+to_unsigned(length,32))
         report "Unexpected Result in FIFO to FX3 Check: " &
         "FX3 Data = " & integer'image(to_integer(unsigned(fx3_fdata_inout))) & "; " &
-        "FX3 Data Expected = " & integer'image(to_integer(unsigned(in1+length)))
+        "FX3 Data Expected = " & integer'image(to_integer(unsigned(in1)+to_unsigned(length,32)))
         severity error;
 
       end procedure check_fx3_bulk_backpressure_write;

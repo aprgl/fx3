@@ -1,3 +1,7 @@
+# Shaun's git-violating backups #
+archive/*
+altera_files/*
+
 # VUnit Files #
 ###############
 vunit_out/*
