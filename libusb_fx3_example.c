@@ -53,7 +53,7 @@ float bit_error_rate_test(int test_length){
     for(int i=0; i<test_length; i++){
 
         for(int i=0; i<FX3_MAX_PAYLOAD; i++){
-            tx_buffer[i] = rand();
+            tx_buffer[i] = i; //0x55; //rand();
         }
         int bytes_sent = fx3_bulk_write(tx_buffer, FX3_MAX_PAYLOAD);
 
@@ -65,6 +65,7 @@ float bit_error_rate_test(int test_length){
         // Read buffer is larger than fx3_max_payload because the USB standard allows
         // read lengths exceeding requested (A protocol error known as "babble")
         int bytes_received = fx3_bulk_read(rx_buffer, FX3_MAX_PAYLOAD);
+        printf("BitCount %d\n", bytes_received);
 
         uint32_t rogue_bits = 0;
         uint32_t a_buff[FX3_MAX_PAYLOAD/4];

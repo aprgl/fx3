@@ -36,7 +36,7 @@ use vunit_lib.logger_pkg.all;
 entity fifo is
   generic (
     g_WIDTH    : natural := 32;
-    g_DEPTH    : integer := 256;
+    g_DEPTH    : integer := 1024;
     g_AF_LEVEL : integer := 3;
     g_AE_LEVEL : integer := 3
     );
@@ -57,7 +57,7 @@ entity fifo is
     almost_empty      : out std_logic;
     empty   : out std_logic;
 
-    usedw : out std_logic_vector(8 downto 0)
+    usedw : out std_logic_vector(9 downto 0)
     );
 end fifo;
  
@@ -131,7 +131,7 @@ begin
    
   full  <= w_FULL;
   empty <= w_EMPTY;
-  usedw <= STD_LOGIC_VECTOR(TO_UNSIGNED(r_FIFO_COUNT,9));
+  usedw <= STD_LOGIC_VECTOR(TO_UNSIGNED(r_FIFO_COUNT,10));
    
  
   -----------------------------------------------------------------------------

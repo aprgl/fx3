@@ -47,8 +47,8 @@ entity fx3 is
         tx_valid_in        : in std_logic;
 
         -- Test Siganls -- Consider wrapping in synthesis_off/on
-        rx_fifo_data_count_out : out std_logic_vector(8 downto 0);
-        tx_fifo_data_count_out : out std_logic_vector(8 downto 0)
+        rx_fifo_data_count_out : out std_logic_vector(9 downto 0);
+        tx_fifo_data_count_out : out std_logic_vector(9 downto 0)
     );
 
 end entity fx3;
@@ -117,7 +117,7 @@ begin
         
         -- Flags
         almost_empty => fpga_to_cpu_buffer_almost_empty,
-        --almost_full  => fpga_to_cpu_buffer_almost_full,
+        almost_full  => fpga_to_cpu_buffer_almost_full,
         empty    => fpga_to_cpu_buffer_empty,
         full     => fpga_to_cpu_buffer_full,
 
@@ -204,6 +204,7 @@ begin
     -- rst_n_in, state, fx3_flaga_in, fx3_flagb_in, fx3_flagc_in, fx3_flagd_in, cpu_to_fpga_buffer_full, data_valid_from_fpga 
     state_machine: process (all) begin
      if(rst_n_in = '0') then
+	     fx3_slcs_n_out <= '1';
         fx3_pktend_n_out <= '1';
         fx3_sloe_n_out <= '1';
         fx3_slrd_n_out <= '1';
@@ -215,7 +216,8 @@ begin
     else
         case( state ) is
             when state_reset =>
-                fx3_pktend_n_out <= '1';
+                fx3_slcs_n_out <= '1';
+					 fx3_pktend_n_out <= '1';
                 fx3_sloe_n_out <= '1';
                 fx3_slrd_n_out <= '1';
                 fx3_slwr_n_out <= '1';
@@ -236,7 +238,8 @@ begin
             -- Reading Data from FX3
             -- Two cycle latency from SLRDn to Data Valid
             when state_idle =>
-                fx3_pktend_n_out <= '1';
+                fx3_slcs_n_out <= '1';
+					 fx3_pktend_n_out <= '1';
                 fx3_sloe_n_out <= '0';
                 fx3_slrd_n_out <= '0';
                 fx3_slwr_n_out <= '1';
@@ -248,7 +251,8 @@ begin
                 next_state <= state_idle_2;
 
             when state_idle_2 =>
-                fx3_pktend_n_out <= '1';
+                fx3_slcs_n_out <= '0';
+					 fx3_pktend_n_out <= '1';
                 fx3_sloe_n_out <= '0';
                 fx3_slrd_n_out <= '0';
                 fx3_slwr_n_out <= '1';
@@ -260,7 +264,8 @@ begin
                 next_state <= state_read;
                 
             when state_read =>
-                fx3_pktend_n_out <= '1';
+                fx3_slcs_n_out <= '0';
+					 fx3_pktend_n_out <= '1';
                 fx3_sloe_n_out <= '0';
                 fx3_slrd_n_out <= '0';
                 fx3_slwr_n_out <= '1';
@@ -282,7 +287,8 @@ begin
                 end if;
                 
             when state_oe_delay =>
-                fx3_pktend_n_out <= '1';
+                fx3_slcs_n_out <= '0';
+					 fx3_pktend_n_out <= '1';
                 fx3_sloe_n_out <= '0';
                 fx3_slrd_n_out <= '1';
                 fx3_slwr_n_out <= '1';
@@ -294,7 +300,8 @@ begin
                 next_state <= state_oe_delay_2;
 
             when state_oe_delay_2 =>
-                fx3_pktend_n_out <= '1';
+                fx3_slcs_n_out <= '0';
+					 fx3_pktend_n_out <= '1';
                 fx3_sloe_n_out <= '0';
                 fx3_slrd_n_out <= '1';
                 fx3_slwr_n_out <= '1';
@@ -305,7 +312,8 @@ begin
                 next_state <= state_oe_delay_3;
 
             when state_oe_delay_3 =>
-                fx3_pktend_n_out <= '1';
+                fx3_slcs_n_out <= '0';
+					 fx3_pktend_n_out <= '1';
                 fx3_sloe_n_out <= '0';
                 fx3_slrd_n_out <= '1';
                 fx3_slwr_n_out <= '1';
@@ -322,7 +330,8 @@ begin
             -- Writing Data to the FX3
             when state_flaga_wait =>
                 
-                fx3_pktend_n_out <= '1';
+                fx3_slcs_n_out <= '0';
+					 fx3_pktend_n_out <= '1';
                 fx3_sloe_n_out <= '1';
                 fx3_slrd_n_out <= '1';
                 fx3_slwr_n_out <= '1';
@@ -334,7 +343,8 @@ begin
                                      
             when state_flagb_wait =>
                 
-                fx3_pktend_n_out <= '1';
+                fx3_slcs_n_out <= '0';
+					 fx3_pktend_n_out <= '1';
                 fx3_sloe_n_out <= '1';
                 fx3_slrd_n_out <= '1';
                 fx3_slwr_n_out <= '1';
@@ -346,7 +356,8 @@ begin
                      
             when state_write =>
                 
-                fx3_pktend_n_out <= '1';
+                fx3_slcs_n_out <= '0';
+					 fx3_pktend_n_out <= '1';
                 fx3_sloe_n_out <= '1';
                 fx3_slrd_n_out <= '1';
                 fx3_slwr_n_out <= '0';
@@ -365,7 +376,9 @@ begin
                 end if;
 
             when state_write_fx3_backpressure =>
-                fx3_pktend_n_out <= '1';
+                
+					 fx3_slcs_n_out <= '0';
+					 fx3_pktend_n_out <= '1';
                 fx3_sloe_n_out <= '1';
                 fx3_slrd_n_out <= '1';
                 fx3_slwr_n_out <= '0';
@@ -378,7 +391,8 @@ begin
 
             when state_end_of_packet =>
                 
-                fx3_pktend_n_out <= '0';
+                fx3_slcs_n_out <= '0';
+					 fx3_pktend_n_out <= '0';
                 fx3_sloe_n_out <= '1';
                 fx3_slrd_n_out <= '1';
                 fx3_slwr_n_out <= '0';
@@ -391,7 +405,8 @@ begin
 
             when state_end_of_packet_hold_0 =>
 
-                fx3_pktend_n_out <= '1';
+                fx3_slcs_n_out <= '0';
+					 fx3_pktend_n_out <= '1';
                 fx3_sloe_n_out <= '1';
                 fx3_slrd_n_out <= '1';
                 fx3_slwr_n_out <= '1';
@@ -404,7 +419,8 @@ begin
 
             when state_end_of_packet_hold_1 =>
 
-                fx3_pktend_n_out <= '1';
+                fx3_slcs_n_out <= '0';
+					 fx3_pktend_n_out <= '1';
                 fx3_sloe_n_out <= '1';
                 fx3_slrd_n_out <= '1';
                 fx3_slwr_n_out <= '1';
@@ -416,7 +432,7 @@ begin
                 next_state <= state_end_of_packet_hold_2;
 
             when state_end_of_packet_hold_2 =>
-
+					 fx3_slcs_n_out <= '0';
                 fx3_pktend_n_out <= '1';
                 fx3_sloe_n_out <= '1';
                 fx3_slrd_n_out <= '1';
@@ -428,6 +444,7 @@ begin
                 next_state <= state_reset;
                          
             when others =>
+					 fx3_slcs_n_out <= '1';
                 fx3_pktend_n_out <= '1';
                 fx3_sloe_n_out <= '1';
                 fx3_slrd_n_out <= '1';
@@ -443,7 +460,7 @@ begin
         
     ---- Stateless Signals ----
 
-    fx3_slcs_n_out <= '0';
+    
     fx3_pmode_out<= "11";    
     fx3_reset_out <= '1';
     fx3_pclk_out <= clk_in;

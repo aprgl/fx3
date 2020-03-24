@@ -10,7 +10,7 @@
 #define FX3_BULK_ENDPOINT_IN 0x81
 #define USB_TIMEOUT 1000 // In milliseconds
 
-#define FX3_MAX_PAYLOAD 8192 // USB3 Max Payload Size
+#define FX3_MAX_PAYLOAD 4096 // USB3 Max Payload Size
 #define USB_RX_BUFFER_DEPTH 8192 // USB3 Max Payload Size
 
 typedef struct{
